@@ -25,10 +25,32 @@
 ## 🏗️ 아키텍처 설계
 
 ### 최종 구현 아키텍처
-<!-- 
-여기에 보고서의 최종 아키텍처 다이어그램 이미지 삽입
-경로: ./assets/final-architecture.png
--->
+graph TB
+    subgraph "Public Subnet"
+        ALB[Application Load Balancer]
+        BH[Bastion Host]
+    end
+    
+    subgraph "Private Subnet - AZ A"
+        WEB1[Web Server 1]
+        WAS1[WAS Server 1]
+    end
+    
+    subgraph "Private Subnet - AZ C"
+        WEB2[Web Server 2]
+        WAS2[WAS Server 2]  
+    end
+    
+    subgraph "Database Subnet"
+        RDS[(RDS MySQL Multi-AZ)]
+    end
+    
+    ALB --> WEB1
+    ALB --> WEB2
+    WEB1 --> WAS1
+    WEB2 --> WAS2
+    WAS1 --> RDS
+    WAS2 --> RDS
 ![최종 아키텍처](./assets/final-architecture.png)
 
 ### 핵심 설계 원칙 및 기술 선택의 이유
