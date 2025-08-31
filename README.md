@@ -13,7 +13,7 @@
 ---
 
 ## 📋 프로젝트 개요
-
+이 프로젝트는 AWS 클라우드 환경에서 웹 서비스를 위한 3-Tier 아키텍처를 설계하고 직접 구현하는 것을 목표로 했습니다. 단순한 기술 구현을 넘어, 실제 서비스 환경에서 발생할 수 있는 네트워크, 보안, 고가용성 문제에 대한 솔루션을 탐색하고 적용하는 데 중점을 두었습니다.
 | 구분 | 내용 |
 |------|------|
 | **프로젝트명** | AWS 기반 3-Tier 하이브리드 클라우드 아키텍처 구축 |
@@ -31,20 +31,24 @@
 -->
 ![최종 아키텍처](./assets/final-architecture.png)
 
-### 핵심 설계 원칙
-- **고가용성(High Availability)**: Multi-AZ 구성으로 장애 대응
-- **확장성(Scalability)**: Auto Scaling을 통한 동적 리소스 관리
-- **보안성(Security)**: 계층별 보안 그룹 및 네트워크 ACL 적용
-- **비용 최적화**: 프리티어 범위 내 효율적 리소스 활용
+### 핵심 설계 원칙 및 기술 선택의 이유
 
-## 🔧 기술 스택
+- **고가용성(High Availability)**: 서울 리전(ap-northeast-2) 내 두 개의 가용 영역(ap-northeast-2a, 2c)에 리소스를 분산 배치하여 단일 장애점(SPOF)을 제거했습니다. RDS MySQL 또한 Multi-AZ 구성을 통해 데이터베이스 장애 발생 시 자동 페일오버를 지원하도록 했습니다.   
+- **확장성(Scalability)**: Auto Scaling 그룹을 웹 서버와 WAS 계층에 각각 적용하여, 트래픽 증가에 따라 자동으로 EC2 인스턴스를 확장하고 부하를 분산하도록 했습니다.
+- **보안성(Security)**:  퍼블릭 서브넷과 프라이빗 서브넷을 명확히 분리하고, 외부 통신이 필요 없는 WAS와 DB는 프라이빗 서브넷에 격리했습니다. 또한, 계층별(Web, WAS, DB)로 별도의 보안 그룹을 생성하여 최소 권한의 원칙을 구현했습니다.
+- **비용 최적화**: 프리티어의 제약에 맞춰 t2.micro 인스턴스와 8GB gp2 스토리지를 선택했습니다. 이는 초기 단계의 성능을 충족시키면서 비용 효율성을 최우선으로 고려한 결과입니다.
 
-### Infrastructure
-- **Cloud Platform**: AWS (VPC, EC2, RDS, IAM)
-- **Network**: Public/Private Subnet, Internet Gateway, Route Tables
-- **Load Balancing**: Network Load Balancer (NLB)
-- **Auto Scaling**: Auto Scaling Groups, Launch Templates
-- **Database**: RDS MySQL 8.0 (Multi-AZ)
+## 🔧 기술 스택 (Technical Stack)
+
+| 구분      | 기술 스택                                                                 | 설명                                   |
+|-----------|---------------------------------------------------------------------------|----------------------------------------|
+| ☁️ Cloud  | ![AWS](https://img.shields.io/badge/AWS-232F3E?logo=amazonaws&logoColor=white) VPC, EC2, RDS, IAM, NLB, Auto Scaling | 클라우드 인프라 구축의 핵심 서비스      |
+| 🌐 Network| Public/Private Subnet, Internet Gateway, Route Tables                      | 계층별 네트워크 분리 및 트래픽 라우팅   |
+| 💻 Compute| ![EC2](https://img.shields.io/badge/EC2-FF9900?logo=amazonec2&logoColor=white) Auto Scaling Groups, Launch Templates | 웹 및 애플리케이션 서버 운영 환경       |
+| 🗄️ Database| ![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white) RDS MySQL 8.0 (Multi-AZ) | 고가용성을 확보한 관계형 데이터베이스   |
+| 🔑 Admin  | SSH, PuTTY                                                                | 서버 원격 접속 및 관리                  |
+
+
 
 ### System Administration
 - **OS**: Amazon Linux 2 AMI
@@ -148,6 +152,17 @@ Security Groups:
 - **Routing 최적화**: 계층별 트래픽 경로 분리
 
 ## 🚨 트러블슈팅 경험
+
+## 🚀 주요 기술적 성과 및 학습 경험
+
+이 프로젝트를 통해 단순히 기술을 구현하는 것을 넘어, 실제 인프라 운영 과정에서 발생할 수 있는 문제들을 직접 경험하고 해결하는 값진 경험을 얻었습니다.  
+각 문제 해결 과정을 통해 얻은 교훈은 다음과 같습니다.
+
+| ⚠️ 문제 상황 | 🔍 원인 분석 | 🔑 해결 과정 | 📚 학습 내용 |
+|--------------|-------------|-------------|-------------|
+| **RDS 연결 실패 (ERROR 2003)** | RDS 보안 그룹의 인바운드 규칙에 WAS 서버의 동적 IP를 지정함 | IP 대신 **Security Group ID**를 소스로 지정하도록 규칙을 변경 | AWS 리소스 간 통신은 동적 IP에 영향을 받지 않도록 **보안 그룹 ID**를 활용하는 것이 안정적임을 학습 |
+| **SSH Private Subnet 접근 불가 (Permission denied)** | PuTTY에서 생성한 `.ppk` 키를 Linux 환경(Bastion Host)에서 사용하려 했고, NACL 아웃바운드 규칙이 누락됨 | PuTTYgen을 이용해 `.pem` 형식으로 키를 변환하고, NACL에 **양방향(인바운드+아웃바운드)** 규칙을 모두 추가 | 키 페어 형식 호환성과 NACL/보안 그룹 차이를 이해하고, 양방향 통신을 위해 모든 방화벽 규칙을 점검해야 함을 체득 |
+| **로드 밸런서 연결 실패 (503 Service Unavailable)** | 로드 밸런서 Health Check 실패 및 Private Subnet의 Security Group과 NACL에 HTTP 트래픽 허용 규칙이 누락됨 | 백엔드 서버로 트래픽이 정상적으로 도달하도록 관련 방화벽 규칙을 수정 | 클라우드 시스템의 **End-to-End 트래픽 흐름 추적** 능력과 계층별 역할 이해 능력 강화 |
 
 ### Issue 1: RDS 연결 실패
 ```bash
