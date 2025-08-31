@@ -25,6 +25,7 @@
 ## 🏗️ 아키텍처 설계
 
 ### 최종 구현 아키텍처
+```mermaid
 graph TB
     subgraph "Public Subnet"
         ALB[Application Load Balancer]
@@ -51,7 +52,7 @@ graph TB
     WEB2 --> WAS2
     WAS1 --> RDS
     WAS2 --> RDS
-![최종 아키텍처](./assets/final-architecture.png)
+```
 
 ### 핵심 설계 원칙 및 기술 선택의 이유
 
